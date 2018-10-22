@@ -8,6 +8,10 @@ import (
 
 func main() {
 
+	/*
+	通过 exec.Command 方法创建 *exec.Cmd对象
+	 */
+
 	// 创建命令对象
 	var cmd *exec.Cmd = exec.Command(`C:\cygwin\bin\bash.exe`,`-c`,`sleep 5; ls -l`)
 

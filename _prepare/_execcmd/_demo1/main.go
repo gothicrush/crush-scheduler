@@ -10,6 +10,7 @@ func main() {
 	/*
 	通过 exec.Command 函数创建 Command对象 *exec.Cmd
 	调用 *exec.Cmd 的 Run 方法执行命令
+	通过 Run 方法可以执行，但是无法获取结果
 	 */
 
 	// Linux下
