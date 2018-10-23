@@ -38,5 +38,4 @@ func main() {
 	}
 
 	log.Println("ret:", putResp)
-
 }

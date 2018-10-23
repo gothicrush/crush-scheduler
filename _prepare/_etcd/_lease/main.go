@@ -24,9 +24,6 @@ func main() {
 		return
 	}
 
-	// 建立KV客户端
-	kvClient := clientv3.NewKV(client)
-
 	// 建立Lease客户端
 	leaseClient := clientv3.NewLease(client)
 
@@ -39,6 +36,9 @@ func main() {
 	}
 
 	leaseOneID := leaseOne.ID
+
+	// 建立KV客户端
+	kvClient := clientv3.NewKV(client)
 
 	// 伴随leaseOne放入一个值
 	kvClient.Put(context.TODO(), "/cron/lock/job1", "hello", clientv3.WithLease(leaseOneID))
