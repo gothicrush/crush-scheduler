@@ -5,12 +5,8 @@ import (
 	"fmt"
 	"github.com/gothicrush/crush-scheduler/master"
 	"runtime"
+	"time"
 )
-
-// 初始化线程数目
-func initEnv() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
-}
 
 var (
 	confFile string // 配置文件路径
@@ -25,7 +21,7 @@ func initArgs() {
 func main() {
 
 	// 设置线程数目
-	initEnv()
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	// 处理命令行参数
 	initArgs()
@@ -36,7 +32,7 @@ func main() {
 		return
 	}
 
-	// 启动任务管理器
+	// 启动任务管理器，与 etcd 服务器建立连接
 	if err := master.InitJobMgr(); err != nil {
 		fmt.Println(err)
 		return
@@ -46,5 +42,9 @@ func main() {
 	if err := master.InitApiServer(); err != nil {
 		fmt.Println(err)
 		return
+	}
+
+	for {
+		time.Sleep(1 * time.Second)
 	}
 }

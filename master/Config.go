@@ -12,6 +12,7 @@ type Config struct {
 	ApiWriteTimeout int      `json:"apiWriteTimeout"`
 	EtcdEndPoints   []string `json:"etcdEndPoints"`
 	EtcdTimeout     int      `json:"etcdTimeout"`
+	WebRoot         string   `json:"webroot"`
 }
 
 // 单例
