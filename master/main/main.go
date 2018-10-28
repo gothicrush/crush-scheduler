@@ -14,7 +14,7 @@ var (
 
 // 解析命令行参数
 func initArgs() {
-	flag.StringVar(&confFile, "config", "./main.json", "传入 main.json")
+	flag.StringVar(&confFile, "config", "./master.json", "传入 master.json")
 	flag.Parse()
 }
 
@@ -33,7 +33,7 @@ func main() {
 	}
 
 	// 启动任务管理器，与 etcd 服务器建立连接
-	if err := master.InitJobMgr(); err != nil {
+	if err := master.InitJobManager(); err != nil {
 		fmt.Println(err)
 		return
 	}

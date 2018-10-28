@@ -34,7 +34,7 @@ func handleJobSave(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 获取表单中job字段
-	postJob := r.PostForm.Get("myjob")
+	postJob := r.PostForm.Get("newjob")
 
 	// 反序列化job
 	var job common.Job
@@ -61,6 +61,7 @@ func handleJobSave(w http.ResponseWriter, r *http.Request) {
 
 // 删除任务接口
 func handleJobDelete(w http.ResponseWriter, r *http.Request) {
+
 	// Post /job/delete name=job1
 
 	// 解析表单

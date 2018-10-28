@@ -1,12 +1,47 @@
 package common
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"strings"
+)
 
 // 定时任务
 type Job struct {
 	Name     string `json:"name"`     // 任务名
 	Command  string `json:"command"`  //shell 命令
 	CronExpr string `json:"cronExpr"` // cron 表达式
+}
+
+// 反序列化job
+func UnpackJob(value []byte) (*Job, error) {
+
+	job := Job{}
+
+	err := json.Unmarshal(value, &job)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &job, nil
+}
+
+// 从etcd的key中提取任务名
+func ExtractJobName(jobKey string) string {
+	return strings.TrimPrefix(jobKey, JOB_SAVE_DIR)
+}
+
+// 任务变化事件有：1.更新事件，2.删除事件
+type JobEvent struct {
+	EventType int //SAVE,DELETE
+	job       *Job
+}
+
+func BuildJobEvent(eventType int, job *Job) *JobEvent {
+	return &JobEvent{
+		EventType: eventType,
+		job:       job,
+	}
 }
 
 // HTTP接口应答

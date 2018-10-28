@@ -3,7 +3,6 @@ package master
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/gothicrush/crush-scheduler/common"
 	"go.etcd.io/etcd/clientv3"
 	"time"
@@ -21,7 +20,7 @@ var (
 )
 
 // 初始化管理器
-func InitJobMgr() error {
+func InitJobManager() error {
 
 	// etcd 连接配置
 	config := clientv3.Config{
@@ -98,7 +97,6 @@ func (jobManager *JobManager) DeleteJob(name string) (*common.Job, error) {
 
 	// 返回被删除的任务信息
 	if len(deleteResponse.PrevKvs) == 0 {
-		fmt.Println(jobKey)
 		return nil, nil
 	}
 
