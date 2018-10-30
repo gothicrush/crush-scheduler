@@ -1,8 +1,11 @@
 package common
 
 import (
+	"context"
 	"encoding/json"
+	"github.com/gorhill/cronexpr"
 	"strings"
+	"time"
 )
 
 // 定时任务
@@ -26,22 +29,74 @@ func UnpackJob(value []byte) (*Job, error) {
 	return &job, nil
 }
 
-// 从etcd的key中提取任务名
+// 从etcd的job中提取任务名
 func ExtractJobName(jobKey string) string {
 	return strings.TrimPrefix(jobKey, JOB_SAVE_DIR)
+}
+
+// 从etcd的killer中提取任务名
+func ExtractKillerName(killerKey string) string {
+	return strings.TrimPrefix(killerKey, JOB_KILLER_DIR)
 }
 
 // 任务变化事件有：1.更新事件，2.删除事件
 type JobEvent struct {
 	EventType int //SAVE,DELETE
-	job       *Job
+	Job       *Job
 }
 
+// go
 func BuildJobEvent(eventType int, job *Job) *JobEvent {
 	return &JobEvent{
 		EventType: eventType,
-		job:       job,
+		Job:       job,
 	}
+}
+
+// 任务执行状态
+type JobExecuteInfo struct {
+	Job        *Job               // 任务信息
+	PlanTime   time.Time          // 理论上的调度时间
+	ReadTime   time.Time          // 实际调度时间
+	CancelCtx  context.Context    // 用于取消任务的context
+	CancelFunc context.CancelFunc // 用于取消命令执行的cancel函数
+}
+
+func BuildJobExecuteInfo(jobPlan *JobSchedulePlan) *JobExecuteInfo {
+	jobExecuteInfo := &JobExecuteInfo{
+		Job:      jobPlan.Job,
+		PlanTime: jobPlan.NextTime,
+		ReadTime: time.Now(),
+	}
+
+	jobExecuteInfo.CancelCtx, jobExecuteInfo.CancelFunc = context.WithCancel(context.TODO())
+
+	return jobExecuteInfo
+}
+
+type JobSchedulePlan struct {
+	Job      *Job                 // 要调度的任务
+	Expr     *cronexpr.Expression // cron表达式
+	NextTime time.Time            // 下次调度时间
+}
+
+// 构造任务执行计划
+func BuildJobSchedulePlan(job *Job) (*JobSchedulePlan, error) {
+	// 解析cron表达式
+	expr, err := cronexpr.Parse(job.CronExpr)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// 生成调度计划表
+	jobSchedulePlan := &JobSchedulePlan{
+		Job:      job,
+		Expr:     expr,
+		NextTime: expr.Next(time.Now()),
+	}
+
+	return jobSchedulePlan, nil
 }
 
 // HTTP接口应答
@@ -49,6 +104,15 @@ type Response struct {
 	Errno int         `json:"errno"`
 	Msg   string      `json:"msg"`
 	Data  interface{} `json:"data"`
+}
+
+// 任务执行结果
+type JobExecuteResult struct {
+	ExecuteInfo *JobExecuteInfo // 执行状态
+	Output      []byte          //命令输出
+	Err         error           // 命令执行错误原因
+	StartTime   time.Time       //启动时间
+	EndTime     time.Time       // 结束时间
 }
 
 // 应答方法
