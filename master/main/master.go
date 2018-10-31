@@ -32,6 +32,12 @@ func main() {
 		return
 	}
 
+	// 日志管理器
+	if err := master.InitLogManager(); err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	// 启动任务管理器，与 etcd 服务器建立连接
 	if err := master.InitJobManager(); err != nil {
 		fmt.Println(err)
