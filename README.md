@@ -1,16 +1,16 @@
 ## 架构图
 
-![](C:\Users\narli\Desktop\gopath\src\github.com\gothicrush\crush-scheduler\_image\0.PNG)
+![](https://github.com/gothicrush/crush-scheduler/blob/master/_image/0.PNG)
 
 
 
 ## web管理样式图
 
-![](C:\Users\narli\Desktop\gopath\src\github.com\gothicrush\crush-scheduler\_image\1.PNG)
+![](https://github.com/gothicrush/crush-scheduler/blob/master/_image/1.PNG)
 
-![](C:\Users\narli\Desktop\gopath\src\github.com\gothicrush\crush-scheduler\_image\2.PNG)
+![](https://github.com/gothicrush/crush-scheduler/blob/master/_image/2.PNG)
 
-![](C:\Users\narli\Desktop\gopath\src\github.com\gothicrush\crush-scheduler\_image\3.PNG)
+![](https://github.com/gothicrush/crush-scheduler/blob/master/_image/3.PNG)
 
 
 
