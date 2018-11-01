@@ -1,15 +1,14 @@
 package worker
 
 import (
-	"fmt"
 	"github.com/gothicrush/crush-scheduler/common"
 	"time"
 )
 
 // 任务调度
 type Scheduler struct {
-	jobEventChan      chan *common.JobEvent              // etcd 任务事件队列
-	jobPlanTable      map[string]*common.JobSchedulePlan //任务调度计划表
+	jobEventChan      chan *common.JobEvent              // 任务事件队列
+	jobPlanTable      map[string]*common.JobSchedulePlan // 任务调度计划表
 	jobExecutingTable map[string]*common.JobExecuteInfo  // 任务执行表
 	jobResultChan     chan *common.JobExecuteResult      // 任务结果队列
 }
@@ -22,6 +21,7 @@ var (
 func (scheduler *Scheduler) handleJobEvent(jobEvent *common.JobEvent) {
 	switch jobEvent.EventType {
 	case common.JOB_EVENT_SAVE: //保存任务事件
+		// 构建保存任务计划
 		jobSchedulePlan, err := common.BuildJobSchedulePlan(jobEvent.Job)
 		if err != nil {
 			return
@@ -63,14 +63,12 @@ func (scheduler *Scheduler) handleJobResult(result *common.JobExecuteResult) {
 		//存储日志到MongoDB
 		G_logSink.Append(jobLog)
 	}
-
-	fmt.Println("任务执行完成：", result.ExecuteInfo.Job.Name, string(result.Output), result.Err)
 }
 
 // 调度协程
 func (scheduler *Scheduler) scheduleLoop() {
 
-	// 初始化(1s)
+	// 初始化(1s)休眠时间
 	scheduleAfter := scheduler.TrySchedule()
 
 	// 调度的定时器
@@ -81,7 +79,7 @@ func (scheduler *Scheduler) scheduleLoop() {
 		select {
 		case jobEvent := <-scheduler.jobEventChan: //监听任务变化事件
 			scheduler.handleJobEvent(jobEvent)
-		case <-scheduleTimer.C: // 最近的任务过期了
+		case <-scheduleTimer.C: // 卡住，直到最近的任务过期了
 		case jobResult := <-scheduler.jobResultChan: //监听任务执行结果
 			scheduler.handleJobResult(jobResult)
 		}
@@ -93,9 +91,8 @@ func (scheduler *Scheduler) scheduleLoop() {
 
 // 尝试执行任务
 func (scheduler *Scheduler) TryStartJob(jobPlan *common.JobSchedulePlan) {
-	// 如果任务正在执行，跳过本次调度
+	// 如果该任务正在执行，跳过本次调度
 	if _, executing := scheduler.jobExecutingTable[jobPlan.Job.Name]; executing {
-		//fmt.Println("尚未跳过执行", jobPlan.Job.Name)
 		return
 	}
 
@@ -106,15 +103,14 @@ func (scheduler *Scheduler) TryStartJob(jobPlan *common.JobSchedulePlan) {
 	scheduler.jobExecutingTable[jobPlan.Job.Name] = jobExecuteInfo
 
 	// 执行任务
-	fmt.Println("执行任务", jobExecuteInfo.Job.Name, jobExecuteInfo.PlanTime, jobExecuteInfo.ReadTime)
 	G_executor.ExecuteJob(jobExecuteInfo)
 }
 
-// 重新计算任务调度状态
+// 尝试执行，并获取获取休眠时间
 func (scheduler *Scheduler) TrySchedule() time.Duration {
 	var scheduleAfter time.Duration
 
-	// 如果任务表为空，则规定睡眠1s
+	// 如果任务调度计划表为空，则规定睡眠1s
 	if len(scheduler.jobPlanTable) == 0 {
 		scheduleAfter = 1 * time.Second
 		return scheduleAfter
@@ -126,13 +122,15 @@ func (scheduler *Scheduler) TrySchedule() time.Duration {
 
 	// 遍历所有任务
 	for _, jobPlan := range scheduler.jobPlanTable {
+		// 如果已经超时或已经到时间点
 		if jobPlan.NextTime.Before(now) || jobPlan.NextTime.Equal(now) {
-			//TODO: 尝试执行任务
+			// 尝试执行任务
 			scheduler.TryStartJob(jobPlan)
-			jobPlan.NextTime = jobPlan.Expr.Next(now) // 更新下次执行时间
+			// 更新下次执行时间
+			jobPlan.NextTime = jobPlan.Expr.Next(now)
 		}
 
-		//统计最近一个要过期的任务时间
+		//统计最近一个要过期的任务时间，用于精确睡眠
 		if nearTime == nil || jobPlan.NextTime.Before(*nearTime) {
 			nearTime = &jobPlan.NextTime
 		}
@@ -143,11 +141,12 @@ func (scheduler *Scheduler) TrySchedule() time.Duration {
 	return scheduleAfter
 }
 
-// 推送任务变化事件
+// 推送任务事件到执行器
 func (scheduler *Scheduler) PushJobEvent(jobEvent *common.JobEvent) {
 	scheduler.jobEventChan <- jobEvent
 }
 
+// 初始化调度器
 func InitScheduler() {
 	// 赋值单例
 	G_scheduler = &Scheduler{

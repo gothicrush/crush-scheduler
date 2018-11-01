@@ -14,7 +14,7 @@
         <div class="row">
             <div class="col-md-12">
                 <div class="page-header">
-                    <h1>管理后台<small>Golang分布式Crontab</small></h1>
+                    <h1>管理后台<small>Golang分布式任务调度</small></h1>
                 </div>
             </div>
         </div>
@@ -23,6 +23,7 @@
         <div class="row">
             <div class="col-md-12">
                 <button type="button" class="btn btn-primary" id="create-job">新建任务</button>
+                <button type="button" class="btn btn-success" id="list-worker">健康节点</button>
             </div>
         </div>
 
@@ -114,19 +115,46 @@
         </div><!-- /.modal-dialog -->
     </div><!-- /.modal -->
 
+    <!-- 健康节点模态框 -->
+    <div id="worker-modal" class="modal fade" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">健康节点</h4>
+                </div>
+                <div class="modal-body">
+                    <table id="worker-list" class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>节点IP</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
     <script>
 
-        function timeFormat(millisecond) {
-            function paddingNum(num, n) {
-                var len = num.toString().length;
-                while (len < n) {
-                    num = "0" + num;
-                    len++
-                }
-                return num
+        function paddingNum(num, n) {
+            var len = num.toString().length;
+            while (len < n) {
+                num = '0' + num;
+                len++
             }
+            return num
+        }
+        function timeFormat(millisecond) {
 
-            var data = new Date(millisecond);
+            var date = new Date(millisecond);
             var year = date.getFullYear();
             var month = paddingNum(date.getMonth() + 1, 2);
             var day = paddingNum(date.getDay(), 2);
@@ -135,7 +163,7 @@
             var second = paddingNum(date.getSeconds(), 2);
             var millisecond = paddingNum(date.getMilliseconds(), 3);
 
-            return year + "-" + month + "-" + day + "-" + hour
+            return year + "-" + month + "-" + day + "-" + hour + ":" + minute + ":" + second + "." + millisecond;
 
         }
 
@@ -237,7 +265,7 @@
                     url: "/job/log",
                     dataType: "json",
                     data: {
-                        name: "jobName"
+                        name: jobName,
                     },
                     success: function(resp) {
                         if (resp.errno != 0) {
@@ -248,22 +276,50 @@
                         for (var i = 0; i < logList.length; i++) {
                             var log = logList[i];
                             var tr = $("<tr>");
-                            tr.append($("<td>").html(log.command))
-                            tr.append($("<td>").html(log.err))
-                            tr.append($("<td>").html(log.ou))
-                            tr.append($("<td>").html(log.command))
-                            tr.append($("<td>").html(log.command))
-                            tr.append($("<td>").html(log.command))
-                            tr.append($("<td>").html(log.command))
-                            tr.append($("<td>").html(log.command))
+                            tr.append($("<td>").html(log.command));
+                            tr.append($("<td>").html(log.err));
+                            tr.append($("<td>").html(log.output));
+                            tr.append($("<td>").html(timeFormat(log.planTime)));
+                            tr.append($("<td>").html(timeFormat(log.scheduleTime)));
+                            tr.append($("<td>").html(timeFormat(log.startTime)));
+                            tr.append($("<td>").html(timeFormat(log.endTime)));
+                            $("#log-list tbody").append(tr)
                         }
-
                     }
-                })
-
+                });
 
                 // 展示模态框
                 $("#log-modal").modal("show");
+            });
+        }
+
+        // 绑定显示健康节点事件
+        function bindLogJob() {
+            $("#list-worker").on("click",function(event) {
+
+                $("#worker-list tbody").empty();
+
+                // 请求接口
+                $.ajax({
+                    url: "/worker/list",
+                    dataType: "json",
+                    success: function(resp) {
+                        if (resp.errno != 0) {
+                            return
+                        }
+
+                        var workerList = resp.data;
+                        for (var i = 0; i< workerList.length; i++) {
+                            var workIP = workerList[i];
+                            var tr = $("<tr>");
+                            tr.append($("<td>").html(workIP));
+                            $("#worker-list tbody").append(tr);
+                        }
+                    }
+                });
+
+                // 展示模态框
+                $("#worker-modal").modal("show");
             });
         }
 

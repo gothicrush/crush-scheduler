@@ -10,13 +10,13 @@ import (
 type JobLock struct {
 	kv         clientv3.KV
 	lease      clientv3.Lease
-	jobName    string             // 任务名
+	jobName    string             // 任务名，也是锁名
 	cancelFunc context.CancelFunc //用于终止自动续租
-	leaseID    clientv3.LeaseID   //租约ID
-	isLocked   bool               //是否上锁成功
+	leaseID    clientv3.LeaseID   //锁的租约ID，用于释放锁过程中立即释放租约
+	isLocked   bool               //是否已经上锁
 }
 
-// 初始化一把锁
+// 创建一把锁
 func InitJobLock(jobName string, kv clientv3.KV, lease clientv3.Lease) *JobLock {
 	jobLock := &JobLock{
 		kv:      kv,
@@ -27,7 +27,7 @@ func InitJobLock(jobName string, kv clientv3.KV, lease clientv3.Lease) *JobLock 
 	return jobLock
 }
 
-// 上锁
+// 尝试上锁
 func (jobLock *JobLock) TryLock() error {
 
 	// 创建5秒租约

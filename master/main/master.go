@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/gothicrush/crush-scheduler/master"
 	"runtime"
-	"time"
 )
 
 var (
@@ -32,25 +31,34 @@ func main() {
 		return
 	}
 
-	// 日志管理器
+	// 初始化服务发现
+	if err := master.InitWorkerManager(); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// 初始化日志管理器
 	if err := master.InitLogManager(); err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	// 启动任务管理器，与 etcd 服务器建立连接
+	// 初始化任务管理器
 	if err := master.InitJobManager(); err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	// 启动API HTTP服务
+	// 初始化API HTTP服务
 	if err := master.InitApiServer(); err != nil {
 		fmt.Println(err)
 		return
 	}
 
+	var temp chan int = make(chan int)
 	for {
-		time.Sleep(1 * time.Second)
+		select {
+		case <-temp:
+		}
 	}
 }

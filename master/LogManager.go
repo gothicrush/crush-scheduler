@@ -9,9 +9,10 @@ import (
 	"time"
 )
 
+// 日志管理器
 type LogManager struct {
-	client        *mongo.Client
-	logCollection *mongo.Collection
+	client        *mongo.Client     // 与MongoDB连接
+	logCollection *mongo.Collection // 数据文档
 }
 
 var (
@@ -19,8 +20,10 @@ var (
 	G_logManager *LogManager
 )
 
+// 初始化日志管理器
 func InitLogManager() error {
 
+	// 连接 MongoDB
 	client, err := mongo.Connect(context.TODO(), G_config.MongodbUri,
 		clientopt.ConnectTimeout(time.Duration(G_config.MongodbConnectTimeout)*time.Millisecond))
 
@@ -36,6 +39,7 @@ func InitLogManager() error {
 	return nil
 }
 
+// 列举所有的日志
 func (logManager *LogManager) ListLog(name string, skip int, limit int) ([]*common.JobLog, error) {
 
 	// 过滤条件
@@ -61,6 +65,7 @@ func (logManager *LogManager) ListLog(name string, skip int, limit int) ([]*comm
 	var logArr []*common.JobLog = make([]*common.JobLog, 0)
 
 	var jobLog *common.JobLog
+
 	for cursor.Next(context.TODO()) {
 		jobLog = &common.JobLog{}
 

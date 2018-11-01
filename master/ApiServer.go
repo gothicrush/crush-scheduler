@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// API Server 对象
 type ApiServer struct {
 	httpServer *http.Server
 }
@@ -20,9 +21,6 @@ var (
 
 // 保存任务接口
 func handleJobSave(w http.ResponseWriter, r *http.Request) {
-	// POST job={"name":"job1", "command":"echo hello", "cronExpr":"* * * * *"}
-
-	// 任务保存到 etcd 中
 
 	// 解析 POST 表单
 	err := r.ParseForm()
@@ -61,8 +59,6 @@ func handleJobSave(w http.ResponseWriter, r *http.Request) {
 
 // 删除任务接口
 func handleJobDelete(w http.ResponseWriter, r *http.Request) {
-
-	// Post /job/delete name=job1
 
 	// 解析表单
 	err := r.ParseForm()
@@ -106,7 +102,7 @@ func handleJobList(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
-// 强制删除某个路由
+// 强制删除某个任务
 func handleJobKill(w http.ResponseWriter, r *http.Request) {
 	//解析表单
 	err := r.ParseForm()
@@ -134,7 +130,7 @@ func handleJobKill(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
-// 查询日志
+// 查询日志接口
 func handleJobLog(w http.ResponseWriter, r *http.Request) {
 
 	// 解析GET参数
@@ -171,6 +167,22 @@ func handleJobLog(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
+// 获取健康worker节点列表
+func handleWorkerList(w http.ResponseWriter, r *http.Request) {
+
+	workerArr, err := G_workerManager.ListWorkers()
+
+	if err != nil {
+		resp, _ := common.BuildResponse(-1, err.Error(), nil)
+		w.Write(resp)
+		return
+	}
+
+	// 正常响应
+	resp, _ := common.BuildResponse(0, "success", workerArr)
+	w.Write(resp)
+}
+
 func InitApiServer() error {
 
 	// 配置路由
@@ -180,6 +192,7 @@ func InitApiServer() error {
 	mux.HandleFunc("/job/list", handleJobList)
 	mux.HandleFunc("/job/kill", handleJobKill)
 	mux.HandleFunc("/job/log", handleJobLog)
+	mux.HandleFunc("/worker/list", handleWorkerList)
 
 	// 配置静态文件
 	// 静态文件目录

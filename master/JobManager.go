@@ -51,6 +51,7 @@ func InitJobManager() error {
 	return nil
 }
 
+// 保存任务
 func (jobManager *JobManager) SaveJob(job *common.Job) (*common.Job, error) {
 	//把任务保存到 /cron/jobs/任务名 -> json
 
@@ -83,6 +84,7 @@ func (jobManager *JobManager) SaveJob(job *common.Job) (*common.Job, error) {
 	return nil, nil
 }
 
+// 删除任务
 func (jobManager *JobManager) DeleteJob(name string) (*common.Job, error) {
 
 	// 键
@@ -111,6 +113,7 @@ func (jobManager *JobManager) DeleteJob(name string) (*common.Job, error) {
 	return &oldJob, nil
 }
 
+// 列举所有任务
 func (jobManager *JobManager) ListJob() ([]*common.Job, error) {
 
 	// 键
@@ -135,6 +138,7 @@ func (jobManager *JobManager) ListJob() ([]*common.Job, error) {
 	return jobList, nil
 }
 
+// 强杀任务
 func (jobManager *JobManager) KillJob(name string) error {
 
 	// 更新 /cron/killer/任务名

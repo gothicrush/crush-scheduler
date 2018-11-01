@@ -29,23 +29,13 @@ func UnpackJob(value []byte) (*Job, error) {
 	return &job, nil
 }
 
-// 从etcd的job中提取任务名
-func ExtractJobName(jobKey string) string {
-	return strings.TrimPrefix(jobKey, JOB_SAVE_DIR)
-}
-
-// 从etcd的killer中提取任务名
-func ExtractKillerName(killerKey string) string {
-	return strings.TrimPrefix(killerKey, JOB_KILLER_DIR)
-}
-
 // 任务变化事件有：1.更新事件，2.删除事件
 type JobEvent struct {
 	EventType int //SAVE,DELETE
 	Job       *Job
 }
 
-// go
+// 构建任务事件
 func BuildJobEvent(eventType int, job *Job) *JobEvent {
 	return &JobEvent{
 		EventType: eventType,
@@ -62,6 +52,7 @@ type JobExecuteInfo struct {
 	CancelFunc context.CancelFunc // 用于取消命令执行的cancel函数
 }
 
+// 构造任务执行信息
 func BuildJobExecuteInfo(jobPlan *JobSchedulePlan) *JobExecuteInfo {
 	jobExecuteInfo := &JobExecuteInfo{
 		Job:      jobPlan.Job,
@@ -74,6 +65,7 @@ func BuildJobExecuteInfo(jobPlan *JobSchedulePlan) *JobExecuteInfo {
 	return jobExecuteInfo
 }
 
+// 任务调度计划
 type JobSchedulePlan struct {
 	Job      *Job                 // 要调度的任务
 	Expr     *cronexpr.Expression // cron表达式
@@ -99,13 +91,6 @@ func BuildJobSchedulePlan(job *Job) (*JobSchedulePlan, error) {
 	return jobSchedulePlan, nil
 }
 
-// HTTP接口应答
-type Response struct {
-	Errno int         `json:"errno"`
-	Msg   string      `json:"msg"`
-	Data  interface{} `json:"data"`
-}
-
 // 任务执行结果
 type JobExecuteResult struct {
 	ExecuteInfo *JobExecuteInfo // 执行状态
@@ -113,6 +98,15 @@ type JobExecuteResult struct {
 	Err         error           // 命令执行错误原因
 	StartTime   time.Time       //启动时间
 	EndTime     time.Time       // 结束时间
+}
+
+////////////////////////////////////////
+
+// HTTP接口应答
+type Response struct {
+	Errno int         `json:"errno"`
+	Msg   string      `json:"msg"`
+	Data  interface{} `json:"data"`
 }
 
 // 应答方法
@@ -132,16 +126,18 @@ func BuildResponse(errno int, msg string, data interface{}) ([]byte, error) {
 	return ret, nil
 }
 
+///////////////////////////////////////////////////
+
 // 任务执行日志
 type JobLog struct {
-	JobName      string `bson:"jobName"`      //任务名字
-	Command      string `bson:"command"`      //脚本命令
-	Err          string `bson:"err"`          //错误原因
-	Output       string `bson:"output"`       //脚本输出
-	PlanTime     int64  `bson:"planTime"`     //计划开始时间
-	ScheduleTime int64  `bson:"scheduleTime"` //实际调度时间
-	StartTime    int64  `bson:"startTime"`    //任务开始时间
-	EndTime      int64  `bson:"endTime"`      //任务结束时间
+	JobName      string `json:"jobName" bson:"jobName"`           //任务名字
+	Command      string `json:"command" bson:"command"`           //脚本命令
+	Err          string `json:"err" bson:"err"`                   //错误原因
+	Output       string `json:"output" bson:"output"`             //脚本输出
+	PlanTime     int64  `json:"planTime" bson:"planTime"`         //计划开始时间
+	ScheduleTime int64  `json:"scheduleTime" bson:"scheduleTime"` //实际调度时间
+	StartTime    int64  `json:"startTime" bson:"startTime"`       //任务开始时间
+	EndTime      int64  `json:"endTime" bson:"endTime"`           //任务结束时间
 }
 
 // 任务日志批次
@@ -157,4 +153,21 @@ type JobLogFilter struct {
 // 任务日志排序规则
 type SortLogByStartTime struct {
 	StartOrder int `bson:"startTime"`
+}
+
+//////////////////////////////////////
+
+// 从etcd的job中提取任务名
+func ExtractJobName(jobKey string) string {
+	return strings.TrimPrefix(jobKey, JOB_SAVE_DIR)
+}
+
+// 从etcd的killer中提取任务名
+func ExtractKillerName(killerKey string) string {
+	return strings.TrimPrefix(killerKey, JOB_KILLER_DIR)
+}
+
+// 从etcd的worker中提取worker的IP
+func ExtractWorkerIP(regKey string) string {
+	return strings.TrimPrefix(regKey, JOB_WORKER_DIR)
 }

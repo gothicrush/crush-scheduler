@@ -32,6 +32,11 @@ func main() {
 		return
 	}
 
+	// 服务注册
+	if err := worker.InitRegister(); err != nil {
+		fmt.Println(err)
+	}
+
 	// 启动日志协程
 	if err := worker.InitLogSink(); err != nil {
 		fmt.Println(err)

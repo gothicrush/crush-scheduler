@@ -20,7 +20,7 @@ var (
 	G_jobManager *JobManager
 )
 
-// 初始化管理器
+// 初始化任务管理器
 func InitJobManager() error {
 
 	// etcd 连接配置
@@ -64,16 +64,18 @@ func InitJobManager() error {
 
 // 监听任务变化
 func (jobManager *JobManager) watchJobs() error {
-	// get /cron/jobs/ 目录下所有的任务
+	// 获取当前已经存在的所有的任务
 	getResponse, err := jobManager.kv.Get(context.TODO(), common.JOB_SAVE_DIR, clientv3.WithPrefix())
 
 	if err != nil {
 		return err
 	}
 
-	// 通过调度协程去执行任务
+	// 通过调度协程去执行已经存在的任务
 	for _, kvpair := range getResponse.Kvs {
+		// 将值转为任务
 		if job, err := common.UnpackJob(kvpair.Value); err == nil {
+			// 每个派发到执行器的任务都要封装为一个任务事件
 			// 构建一个 Save 事件
 			jobEvent := common.BuildJobEvent(common.JOB_EVENT_SAVE, job)
 			// 推送给调度协程
@@ -81,7 +83,7 @@ func (jobManager *JobManager) watchJobs() error {
 		}
 	}
 
-	// 并用该 revision向后监听变化
+	// 开启协程，用该revision向后监听后来新增的任务
 	go func() {
 		// 从 get 时刻的后续版本开始监听变化
 		watchStartRevision := getResponse.Header.Revision + 1
@@ -91,6 +93,7 @@ func (jobManager *JobManager) watchJobs() error {
 		// 处理监听事件
 		for watchResponse := range watchChan {
 			for _, watchEvent := range watchResponse.Events {
+				// 从监听事件中获取任务，并封装为任务事件，发给执行器
 				var job *common.Job
 				var jobEvent *common.JobEvent
 
@@ -98,17 +101,20 @@ func (jobManager *JobManager) watchJobs() error {
 				case mvccpb.PUT: //任务保存事件
 					//反序列化job，推送给调度协程
 					if job, err = common.UnpackJob(watchEvent.Kv.Value); err != nil {
-						continue
+						continue // 失败则不管了
 					}
 					// 构建一个 Save 事件，准备进行推送
 					jobEvent = common.BuildJobEvent(common.JOB_EVENT_SAVE, job)
 				case mvccpb.DELETE: //任务删除事件
+					//提取出需要删除任务的名字
 					jobName := common.ExtractJobName(string(watchEvent.Kv.Key))
+					//封装为一个任务
 					job := &common.Job{Name: jobName}
 					// 构建一个 Delete 事件，准备进行推送
 					jobEvent = common.BuildJobEvent(common.JOB_EVENT_DELETE, job)
 				}
 
+				// 将任务事件推送给执行器
 				G_scheduler.PushJobEvent(jobEvent)
 			}
 		}
@@ -117,7 +123,7 @@ func (jobManager *JobManager) watchJobs() error {
 	return nil
 }
 
-// 创建任务执行锁
+// 创建分布式锁，并返回
 func (jobManager *JobManager) CreateJobLock(jobName string) *JobLock {
 	// 返回一把锁
 	return InitJobLock(jobName, jobManager.kv, jobManager.lease)
@@ -131,17 +137,18 @@ func (jobManager *JobManager) watchKiller() {
 			clientv3.WithPrefix())
 		// 处理监听事件
 		for watchResponse := range watchChan {
+			// 处理监听事件
 			for _, watchEvent := range watchResponse.Events {
-				//var job *common.Job
-				//var jobEvent *common.JobEvent
-
 				switch watchEvent.Type {
 				case mvccpb.PUT: //杀死任务事件
+					// 获取强杀任务名
 					jobName := common.ExtractKillerName(string(watchEvent.Kv.Key))
+					// 封装为一个强杀任务
 					job := &common.Job{Name: jobName}
+					// 封装为一个强杀事件
 					jobEvent := common.BuildJobEvent(common.JOB_EVENT_KILLER, job)
+					// 将强杀事件推送给执行器执行
 					G_scheduler.PushJobEvent(jobEvent)
-				case mvccpb.DELETE: //killer标记过期，被自动删除，不关心
 				}
 			}
 		}
