@@ -38,7 +38,7 @@
   * 强制删除某个任务接口
   * 查询日志接口
   * 获取健康worker节点接口
-  * 初始化API Server
+  * 初始化API Server...
 
 ### Job Manager
 
